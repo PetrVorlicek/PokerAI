@@ -93,6 +93,7 @@ class Player {
     }
 }
 
+
 class Game {
     constructor(players)
     {       
@@ -101,6 +102,17 @@ class Game {
         this.players = players  //table players
     }
 
+    //Log table cards for testing
+    showTable()
+    {
+        console.log("Table Cards:")
+        for (const card of this.table)
+        {
+            console.log([card.value, card.color])
+        }
+    }
+
+    //first phase of game
     serve()
     {
         //Serve each player
@@ -115,10 +127,56 @@ class Game {
             player.takeCards(cards)
         }
     }
+
+    // second phase of game
+    flop()
+    {
+        for (let i = 0; i < 3; i++)
+        {
+            //burn card
+            this.deck.serve()
+            //add card to the table
+            this.table.push(this.deck.serve())
+        }
+    }
+
+    // third phase of game
+    turn()
+    {
+            //burn card
+            this.deck.serve()
+            //add card to the table
+            this.table.push(this.deck.serve())
+    }
+
+    // final phase of game
+    river()
+    {
+        //haha
+        this.turn()
+    }
 }
 
-//testing
+/*  TESTING  */
+
+//Serving
+console.log("Serving")
 let player = new Player();
 let game = new Game([player])
 game.serve()
 player.showCards()
+
+//Flop
+console.log("Flop")
+game.flop()
+game.showTable()
+
+//Turn
+console.log("Turn")
+game.turn()
+game.showTable()
+
+//River
+console.log("River")
+game.river()
+game.showTable()
