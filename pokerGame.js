@@ -157,6 +157,207 @@ class Game {
     }
 }
 
+/* EVALUATION FUNCTION */
+
+const eval = (game_cards, player_cards) => 
+{   
+    // return 0 for no cards
+    // 0.0 for float, because in current state score can't be fit into int
+    if (game_cards.length + player_cards.length == 0) return 0.0
+    
+    // copy the table and hand into cards
+    let cards = []
+    for (const card of game_cards)
+    {
+        cards.push(new Card(card.value, card.color))
+    }
+    for (const card of player_cards)
+    {
+        cards.push(new Card(card.value, card.color))
+    }
+    
+    // return value for one card
+    if (cards.length == 1) return 0.0 + cards[0].value
+
+    // sort cards
+    cards.sort((a, b) =>  b.value - a.value)
+
+    //  TODO
+    //
+    //  split into subsets of 5, if cards.length > 5
+    //
+    //  TODO
+
+
+    for (const card of cards)
+    {
+        console.log(card.value,card.color)
+    }
+    
+    // start counting score, initiate on high card
+    let score = 0.0
+
+    // check flush
+    const color = cards[0].color
+    let flush = true
+    for (let i = 1; i<cards.length; i++)
+    {
+        if (color != cards[i].color) 
+        {
+            flush = false
+        }
+
+    }
+
+    // check straight
+    let last = cards[cards.length-1].value
+    let straight = true
+    for (let i = cards.length-2; i >= 0; i--)
+    {
+        if (last == cards[i].value - 1)
+        {
+            last = cards[i].value
+        }
+        else 
+        {
+            straight = false;
+        }
+
+    }
+
+
+    // score straight flush, flush, straight
+    if (straight && flush)
+    {
+        console.log("straight flush")
+        return score + cards[0] * 35600000000n
+        
+    }
+    if(flush)
+    {
+        let multiplier = 3200000
+        for (let i = 0; i < cards.length; i++)
+        {
+            score += cards[i] * multiplier
+            multiplier = multiplier / 20
+        }
+        console.log("flush")
+        return score
+        
+    }
+    if(straight)
+    {
+        console.log("straight")
+        return score + cards[cards.length-1] * 160000
+        
+    }
+
+    // Check four, fullhouse, three, pairs
+    // Create key - value map
+    const cardMap = new Map()
+    for (const card of cards)
+    {
+        if (cardMap.has(card.value)) 
+        {
+            cardValue = cardMap.get(card.value)
+            cardMap.set(card.value, cardValue + 1 )
+        }
+        else 
+        {
+            cardMap.set(card.value, 1)
+        }
+    }
+
+    // get highest 
+    const values = cardMap.values()
+    const max = Math.max(...values)
+    
+    let high = 0
+    let firstPair = 0
+    let secondPair = 0
+    let three = 0
+    let four = 0
+
+    //score combinations
+    switch (max)
+    {
+        
+        case 1:
+            score += cards[0].value
+            break;
+
+        case 2:
+            cardMap.forEach((value, key) =>
+            {
+                if (value == 2)
+                {
+                    if (firstPair == 0)
+                    {
+                        firstPair = key
+                    }
+                    else 
+                    {
+                        secondPair = firstPair
+                        firstPair = key
+                    }
+                }
+                else 
+                {
+                    if (high == 0)
+                    high = key
+                }
+            })
+            score += 20*firstPair + 400*secondPair + high
+            break;
+
+        case 3:
+            cardMap.forEach((value, key) =>
+            {
+                if (value == 3)
+                {
+                    three = key
+                }
+                else if(value == 2)
+                {
+                    firstPair = key
+                }
+                else
+                {
+                    if (high == 0)
+                    high = key
+                }
+            })
+            
+            if (firstPair > 0) score = three * 64000000 + firstPair * 20 + high
+            else score = three * 8000 + high
+            break;
+
+        case 4:
+            cardMap.forEach((value, key) =>
+            {
+                if (value == 4)
+                {
+                    four = key
+                }
+                else
+                {
+                    high = key
+                }
+            })
+            score = four * 1280000000 + high
+            break;
+    }
+
+    console.log("")
+    console.log(cardMap)
+    
+    
+    return score
+}
+
+
+
+
 /*  TESTING  */
 
 //Serving
@@ -180,3 +381,6 @@ game.showTable()
 console.log("River")
 game.river()
 game.showTable()
+
+let score = eval(game.table, [])
+console.log(score)
