@@ -76,7 +76,7 @@ class Player {
     takeCards(cards)
     {
         //Take exactly two cards if hand is empty
-        if(cards.length == 2 && this.hand.length == 0)
+        if(cards.length === 2 && this.hand.length === 0)
         {
             this.hand = cards;
         } else console.log("Player has problem with taking cards!");
@@ -158,42 +158,36 @@ class Game {
 }
 
 /* EVALUATION FUNCTION */
-
-const eval = (game_cards, player_cards) => 
-{   
-    // return 0 for no cards
-    // 0.0 for float, because in current state score can't be fit into int
-    if (game_cards.length + player_cards.length == 0) return 0.0
-    
-    // copy the table and hand into cards
-    let cards = []
-    for (const card of game_cards)
+// subset function - stolen from internet
+const findCombinations = (array, length) =>
+{
+    penalty = array.length - length
+    const combinations = (currentArray, possibleArray, index, currentPenalty) =>
     {
-        cards.push(new Card(card.value, card.color))
+        if (possibleArray.length <= currentPenalty || currentPenalty === 0 )
+        {
+            console.log("currentArray")
+            return currentArray[index].concat(possibleArray)
+        }
+        let card = possibleArray.pop()
+        console.log(possibleArray.length)
+        // dont add the card and take penalty
+        currentArray = combinations(currentArray, possibleArray, index, currentPenalty - 1) 
+        // add the card to the deck
+        if (currentArray[index]) currentArray[index].push(card)
+        else currentArray.push([card])
+        currentArray = combinations(currentArray, possibleArray, currentArray.length, currentPenalty)
+        return currentArray    
     }
-    for (const card of player_cards)
-    {
-        cards.push(new Card(card.value, card.color))
-    }
-    
-    // return value for one card
-    if (cards.length == 1) return 0.0 + cards[0].value
-
-    // sort cards
-    cards.sort((a, b) =>  b.value - a.value)
-
-    //  TODO
-    //
-    //  split into subsets of 5, if cards.length > 5
-    //
-    //  TODO
+    return combinations([[]], array, 0, penalty)
+}
 
 
-    for (const card of cards)
-    {
-        console.log(card.value,card.color)
-    }
-    
+
+
+// scoring function for 2 and more cards
+const gameScore = (cards) =>
+{
     // start counting score, initiate on high card
     let score = 0.0
 
@@ -214,7 +208,7 @@ const eval = (game_cards, player_cards) =>
     let straight = true
     for (let i = cards.length-2; i >= 0; i--)
     {
-        if (last == cards[i].value - 1)
+        if (last === cards[i].value - 1)
         {
             last = cards[i].value
         }
@@ -230,7 +224,7 @@ const eval = (game_cards, player_cards) =>
     if (straight && flush)
     {
         console.log("straight flush")
-        return score + cards[0] * 35600000000n
+        return score + cards[0] * 3560000000
         
     }
     if(flush)
@@ -289,9 +283,9 @@ const eval = (game_cards, player_cards) =>
         case 2:
             cardMap.forEach((value, key) =>
             {
-                if (value == 2)
+                if (value === 2)
                 {
-                    if (firstPair == 0)
+                    if (firstPair === 0)
                     {
                         firstPair = key
                     }
@@ -303,7 +297,7 @@ const eval = (game_cards, player_cards) =>
                 }
                 else 
                 {
-                    if (high == 0)
+                    if (high === 0)
                     high = key
                 }
             })
@@ -313,29 +307,29 @@ const eval = (game_cards, player_cards) =>
         case 3:
             cardMap.forEach((value, key) =>
             {
-                if (value == 3)
+                if (value === 3)
                 {
                     three = key
                 }
-                else if(value == 2)
+                else if(value === 2)
                 {
                     firstPair = key
                 }
                 else
                 {
-                    if (high == 0)
+                    if (high === 0)
                     high = key
                 }
             })
             
-            if (firstPair > 0) score = three * 64000000 + firstPair * 20 + high
+            if (firstPair > 0) score = three * 6400000 + firstPair * 20 + high
             else score = three * 8000 + high
             break;
 
         case 4:
             cardMap.forEach((value, key) =>
             {
-                if (value == 4)
+                if (value === 4)
                 {
                     four = key
                 }
@@ -347,12 +341,56 @@ const eval = (game_cards, player_cards) =>
             score = four * 1280000000 + high
             break;
     }
-
-    console.log("")
-    console.log(cardMap)
-    
-    
     return score
+}
+
+const eval = (game_cards, player_cards) => 
+{   
+    // return 0 for no cards
+    // 0.0 for float, because in current state score can't be fit into int
+    if (game_cards.length + player_cards.length === 0) return 0.0
+    
+    // copy the table and hand into cards
+    let cards = []
+    for (const card of game_cards)
+    {
+        cards.push(new Card(card.value, card.color))
+    }
+    for (const card of player_cards)
+    {
+        cards.push(new Card(card.value, card.color))
+    }
+    
+    // return value for one card
+    if (cards.length === 1) return 0.0 + cards[0].value
+
+    // sort cards
+    cards.sort((a, b) =>  b.value - a.value)
+
+    let highScore = 0.0
+    let highHand = []
+    if (cards.length > 5)
+    {
+        //  split into subsets of 5
+        
+        let hands = findCombinations(cards, 5, 5)
+        for (let hand in hands)
+        {
+            let currentScore = gameScore(hand)
+            if (currentScore > highScore)
+            {
+                highHand = hand
+                highScore = currentScore
+            }
+        }
+    }
+    else
+    {
+        highScore = gameScore(cards)
+        highHand = cards
+    }
+
+    return highHand
 }
 
 
@@ -381,6 +419,8 @@ game.showTable()
 console.log("River")
 game.river()
 game.showTable()
+console.log()
 
-let score = eval(game.table, [])
-console.log(score)
+arr = findCombinations(["A","B","C"],2)
+
+console.log(arr)
